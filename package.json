@@ -1,0 +1,17 @@
+{
+  "name": "h2zbmh-site",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "杭州二中白马湖学校官网静态站（Markdown 驱动，Hexo 约定）",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch --serve",
+    "serve": "node scripts/build.mjs --serve",
+    "deploy": "bash scripts/deploy.sh",
+    "clean": "rm -rf public"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0"
+  }
+}
