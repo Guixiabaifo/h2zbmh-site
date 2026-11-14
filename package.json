@@ -8,7 +8,8 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch --serve",
     "serve": "node scripts/build.mjs --serve",
-    "clean": "rm -rf public"
+    "clean": "rm -rf public",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "markdown-it": "^14.1.0"
