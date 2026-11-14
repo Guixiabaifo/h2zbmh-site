@@ -8,7 +8,6 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch --serve",
     "serve": "node scripts/build.mjs --serve",
-    "deploy": "bash scripts/deploy.sh",
     "clean": "rm -rf public"
   },
   "dependencies": {
