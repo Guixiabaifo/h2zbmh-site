@@ -15,6 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'source');
 const POSTS = path.join(SRC, '_posts');
+const PAGES = path.join(SRC, '_pages');
 const THEME = path.join(ROOT, 'theme');
 const PUBLIC = path.join(ROOT, 'public');
 
@@ -110,6 +111,27 @@ function loadPosts() {
   return posts.sort((a, b) => b.timestamp - a.timestamp);
 }
 
+/* ------------------------------------------------------------------ pages */
+function loadPages() {
+  if (!fs.existsSync(PAGES)) return [];
+  const out = [];
+  for (const f of fs.readdirSync(PAGES).filter(f => /\.md$/i.test(f))) {
+    const raw = read(path.join(PAGES, f));
+    const { data, body } = parseFrontMatter(raw);
+    const slug = path.basename(f, path.extname(f));
+    const permalinkPath = (data.permalink || `/${slug}/`).replace(/^\/+|\/+$/g, '');
+    let html = md.render(body).replace(/src="(?:\/)?images\//g, 'src="/images/');
+    const text = plain(html);
+    out.push({
+      slug, title: data.title || slug, desc: data.desc || text.slice(0, 90),
+      nav: data.nav === 'true' || data.nav === true,
+      url: '/' + permalinkPath + '/',
+      html, words: text.replace(/\s/g, '').length,
+    });
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ templates */
 const T = (name) => read(path.join(THEME, 'templates', name));
 let ARTICLE_TPL = '', SITE = null;
@@ -167,6 +189,17 @@ function build() {
     fs.writeFileSync(path.join(dir, 'index.html'), renderPost(p, posts[i + 1], posts[i - 1]));
   });
 
+  // 独立页面（source/_pages/*.md）
+  const PAGES_TPL = T('page.html');
+  for (const pg of loadPages()) {
+    const dir = path.join(PUBLIC, pg.url);
+    ensure(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), PAGES_TPL
+      .replaceAll('{{TITLE}}', esc(pg.title))
+      .replaceAll('{{DESC}}', esc(pg.desc))
+      .replaceAll('{{BODY}}', pg.html));
+  }
+
   // 归档 / 标签
   ensure(path.join(PUBLIC, 'archives'));
   fs.writeFileSync(path.join(PUBLIC, 'archives', 'index.html'), renderArchive(posts));
@@ -206,9 +239,79 @@ function build() {
   // 首页
   fs.writeFileSync(path.join(PUBLIC, 'index.html'), read(path.join(THEME, 'templates', 'index.html')));
 
+  relocateArchive();
+
+  // 快照索引 /snapshots/
+  const snapDir = path.join(PUBLIC, 'snapshots');
+  if (fs.existsSync(snapDir)) {
+    const items = fs.readdirSync(snapDir).filter(f => /\.html?$/i.test(f))
+      .map(f => ({ f, t: f.replace(/\.html?$/i, '') }))
+      .sort((a, b) => a.t.localeCompare(b.t));
+    const rows = items.map(it => `<li><a href="/snapshots/${encodeURI(it.f)}">${esc(it.t)}</a></li>`).join('\n');
+    ensure(snapDir);
+    fs.writeFileSync(path.join(snapDir, 'index.html'), `<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>页面快照 · 浙江省杭州二中白马湖学校</title>
+<link rel="icon" href="/assets/img/favicon.png"><link rel="stylesheet" href="/assets/styles.css">
+<style>
+.snap-wrap{width:900px;max-width:100%;margin:0 auto;padding:40px 20px 70px}
+.snap-hd{margin-bottom:26px;border-bottom:1px solid #eee;padding-bottom:18px}
+.snap-hd h1{font-size:30px;color:#1a1a1a}
+.snap-hd p{color:#888;font-size:14px;margin-top:10px}
+.snap-list li{padding:11px 4px;border-bottom:1px dashed #e8e8e8;font-size:15px}
+.snap-list a{color:#333} .snap-list a:hover{color:#0c8066}
+</style></head><body>
+<div class="topbar"><div class="wrap"><span class="item">联系我们：0571-86798900</span></div></div>
+<div class="snap-wrap">
+  <div class="snap-hd"><h1>页面快照</h1><p>共 ${items.length} 份旧站页面快照，点击可直接查看</p></div>
+  <ul class="snap-list">
+${rows}
+  </ul>
+  <p style="margin-top:26px"><a href="/archive/" style="color:#0c8066">← 返回存档</a></p>
+</div>
+</body></html>`);
+  }
+
+  // 存档中心 /archive/
+  const hubData = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'assets', 'data', 'site.json'), 'utf8'));
+  const yearLinks = (hubData.years || []).map(y => `<a href="/archives/#y${y.y}"><b>${y.y}</b><span>${y.n} 篇</span></a>`).join('');
+  ensure(path.join(PUBLIC, 'archive'));
+  fs.writeFileSync(path.join(PUBLIC, 'archive', 'index.html'),
+    T('archive-hub.html').replaceAll('{{YEARS}}', yearLinks));
   if (MEDIA) rewriteMedia(PUBLIC, MEDIA);
 
   console.log(`✓ build ${posts.length} posts → public/  (${Date.now() - t0} ms)`);
+}
+
+/* ------------------------------------------------------------------ archive */
+/** 把存档相关页面统一收进 /archive/，并在原地址留跳转 */
+function relocateArchive() {
+  const moves = [
+    { from: 'archive.html', to: 'archive/pages/index.html' },
+    { from: 'mirror-index.html', to: 'archive/mirror/index.html' },
+  ];
+  const fix = (html) => html
+    .replace(/(href|src)="assets\//g, '$1="/assets/')
+    .replace(/(href|src)="snapshots\//g, '$1="/snapshots/')
+    .replace(/href="mecbmh\//g, 'href="/mecbmh/')
+    .replace(/href="bmhenrol\//g, 'href="/bmhenrol/')
+    .replace(/href="about\.html"/g, 'href="/about/"')
+    .replace(/href="archive\.html/g, 'href="/archive/pages/')
+    .replace(/href="mirror-index\.html"/g, 'href="/archive/mirror/"');
+
+  for (const m of moves) {
+    const src = path.join(PUBLIC, m.from);
+    if (!fs.existsSync(src)) continue;
+    const html = fix(read(src));
+    const dst = path.join(PUBLIC, m.to);
+    ensure(path.dirname(dst));
+    fs.writeFileSync(dst, html);
+    // 原地址 → 跳转
+    fs.writeFileSync(src, `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">`
+      + `<title>页面已迁移</title><meta http-equiv="refresh" content="0;url=/${m.to.replace(/index\.html$/, '')}">`
+      + `<link rel="canonical" href="/${m.to.replace(/index\.html$/, '')}"></head>`
+      + `<body><p>页面已迁移至 <a href="/${m.to.replace(/index\.html$/, '')}">/${m.to.replace(/index\.html$/, '')}</a></p></body></html>`);
+  }
 }
 
 /* ------------------------------------------------------------------ media rewrite */

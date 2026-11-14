@@ -82,16 +82,16 @@ const Nav = {
     return {
       items: [
         { key:'home', label:'首页', href: SITE + '/' },
-        { key:'about', label:'学校概况', href: SITE + '/about.html' },
-        { key:'news', label:'校园新闻', href: SITE + '/archive.html' },
-        { key:'notice', label:'通知公告', href: SITE + '/archive.html' },
-        { key:'branch', label:'分部站点', sub:[
-            { label:'总校', href: SITE + '/mecbmh/bmhxx/homepage/' },
-            { label:'小学部', href: SITE + '/mecbmh/bmhprimary/homepage/' },
-            { label:'初中部', href: SITE + '/mecbmh/bmhmiddle/homepage/' } ] },
+        { key:'about', label:'学校概况', href: SITE + '/about/' },
+        { key:'news', label:'校园新闻', href: SITE + '/archives/' },
+        { key:'contact', label:'联系我们', href: SITE + '/contact/' },
         { key:'campus', label:'多彩校园', href: SITE + '/#gallery' },
-        { key:'contact', label:'联系我们', href: SITE + '/#contact' },
-        { key:'archive', label:'存档', href: SITE + '/archive.html' }
+        { key:'privacy', label:'隐私政策', href: SITE + '/privacy/' },
+        { key:'archive', label:'存档', sub:[
+            { label:'存档总览', href: SITE + '/archive/' },
+            { label:'存档清单', href: SITE + '/archive/pages/' },
+            { label:'还原站点', href: SITE + '/archive/mirror/' },
+            { label:'页面快照', href: SITE + '/snapshots/' } ] }
       ]
     };
   }
@@ -191,12 +191,12 @@ const News = {
 const Pair = {
   template: `
   <section class="pair">
-    <a class="c a" :href="SITE + '/about.html'">
+    <a class="c a" :href="SITE + '/about/'">
       <span class="ico" v-html="ICON.house"></span>
       <h3>德育之窗</h3>
       <p>——————————————————————</p>
     </a>
-    <a class="c b" :href="SITE + '/mirror-index.html'">
+    <a class="c b" :href="SITE + '/archive/mirror/'">
       <span class="ico" v-html="ICON.book"></span>
       <h3>教育科研</h3>
       <p>——————————————————————</p>
@@ -212,7 +212,7 @@ const Mosaic = {
       <a class="ph wide" :href="SITE + '/mecbmh/bmhxx/homepage/'">
         <img src="/assets/img/wp-mos-big.jpg" alt="总校首页存档"><span>总校首页</span>
       </a>
-      <a class="card" :href="SITE + '/about.html'">
+      <a class="card" :href="SITE + '/about/'">
         <div class="a">——</div>
         <h3>办学成绩</h3>
         <div class="ln"></div>
@@ -224,7 +224,7 @@ const Mosaic = {
       <a class="ph third" :href="SITE + '/mecbmh/bmhmiddle/homepage/'">
         <img src="/assets/img/wp-mos-r1.jpg" alt="初中部"><span>初中部</span>
       </a>
-      <a class="ph third" :href="SITE + '/archive.html'">
+      <a class="ph third" :href="SITE + '/archive/'">
         <img src="/assets/img/wp-mos-r2.jpg" alt="校园新闻"><span>校园新闻</span>
       </a>
       <a class="ph third" :href="SITE + '/mecbmh/'">
@@ -296,8 +296,8 @@ const FootMap = {
           <li><a :href="SITE + '/mecbmh/'">/mecbmh 目录树</a></li>
         </ul></div>
         <div><h4>关于</h4><ul>
-          <li><a :href="SITE + '/about.html'">站点概况</a></li>
-          <li><a :href="SITE + '/about.html'">——</a></li>
+          <li><a :href="SITE + '/about/'">站点概况</a></li>
+          <li><a :href="SITE + '/about/'">——</a></li>
           <li><a href="https://web.archive.org/" target="_blank" rel="noopener">Internet Archive</a></li>
         </ul></div>
         <div><h4>相关学校</h4><ul>
@@ -319,9 +319,9 @@ const Footer = {
       <span>备案证编号：浙ICP备15017196</span><span>|</span>
       <span>地址：滨江区天马路 500 号　电话：0571-86798900</span>
       <div class="r">
-        <a :href="SITE + '/about.html'">网站地图</a>
+        <a :href="SITE + '/about/'">网站地图</a>
         <a :href="SITE + '/mecbmh/'">友情链接</a>
-        <a :href="SITE + '/about.html'">法律声明</a>
+        <a :href="SITE + '/about/'">法律声明</a>
       </div>
     </div>
   </div>`,
