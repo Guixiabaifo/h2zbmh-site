@@ -23,6 +23,10 @@ const WATCH = argv.includes('--watch');
 const SERVE = argv.includes('--serve');
 const PORT = Number((argv[argv.indexOf('--port') + 1] || 8080)) || 8080;
 
+// 媒体外链前缀：图片/大头资源放对象存储，页面只引用链接
+// 置空字符串则全部随站点一起发布
+const MEDIA = process.env.MEDIA_BASE ?? 'https://h2zbmh.cn-sy1.rains3.com';
+
 const md = new MarkdownIt({ html: true, linkify: true, breaks: false });
 
 /* ------------------------------------------------------------------ utils */
@@ -171,8 +175,14 @@ function build() {
 
   // 静态资源
   copyDir(path.join(THEME, 'assets'), path.join(PUBLIC, 'assets'));
+  if (MEDIA) {
+    // 图片已放对象存储，发布目录里只保留代码与数据
+    for (const d of [path.join(PUBLIC, 'assets', 'img'), path.join(PUBLIC, 'images')]) {
+      fs.rmSync(d, { recursive: true, force: true });
+    }
+  }
   copyDir(path.join(ROOT, 'static'), PUBLIC);   // 存档页 / 镜像树 / CNAME / .nojekyll
-  copyDir(path.join(SRC, 'images'), path.join(PUBLIC, 'images'));
+  if (!MEDIA) copyDir(path.join(SRC, 'images'), path.join(PUBLIC, 'images'));
 
   // 首页数据（Vue 首页读取）
   ensure(path.join(PUBLIC, 'assets', 'data'));
@@ -196,7 +206,40 @@ function build() {
   // 首页
   fs.writeFileSync(path.join(PUBLIC, 'index.html'), read(path.join(THEME, 'templates', 'index.html')));
 
+  if (MEDIA) rewriteMedia(PUBLIC, MEDIA);
+
   console.log(`✓ build ${posts.length} posts → public/  (${Date.now() - t0} ms)`);
+}
+
+/* ------------------------------------------------------------------ media rewrite */
+/** 把页面里的本地图片引用替换成对象存储外链，仓库只留源码与页面 */
+function rewriteMedia(dir, base) {
+  const exts = new Set(['.html', '.css', '.js', '.json']);
+  const patterns = [
+    [/src="\/images\//g, `src="${base}/images/`],
+    [/href="\/images\//g, `href="${base}/images/`],
+    [/url\((['"]?)\/images\//g, `url($1${base}/images/`],
+    [/src="\/assets\/img\//g, `src="${base}/assets/img/`],
+    [/href="\/assets\/img\//g, `href="${base}/assets/img/`],
+    [/url\((['"]?)\/assets\/img\//g, `url($1${base}/assets/img/`],
+    [/"\/images\//g, `"${base}/images/`],
+    [/'\/images\//g, `'${base}/images/`],
+    [/"\/assets\/img\//g, `"${base}/assets/img/`],
+    [/'\/assets\/img\//g, `'${base}/assets/img/`],
+  ];
+  let changed = 0;
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) { walk(full); continue; }
+      if (!exts.has(path.extname(e.name).toLowerCase())) continue;
+      let txt = fs.readFileSync(full, 'utf8');
+      const before = txt;
+      for (const [re, rep] of patterns) txt = txt.replace(re, rep);
+      if (txt !== before) { fs.writeFileSync(full, txt); changed++; }
+    }
+  })(dir);
+  if (changed) console.log(`  media → ${base}  (${changed} files rewritten)`);
 }
 
 /* ------------------------------------------------------------------ serve / watch */

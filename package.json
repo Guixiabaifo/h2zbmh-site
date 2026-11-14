@@ -9,9 +9,13 @@
     "dev": "node scripts/build.mjs --watch --serve",
     "serve": "node scripts/build.mjs --serve",
     "clean": "rm -rf public",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:oss": "node scripts/deploy-oss.mjs"
   },
   "dependencies": {
     "markdown-it": "^14.1.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1169.0"
   }
 }
