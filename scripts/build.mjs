@@ -25,7 +25,7 @@ const PORT = Number((argv[argv.indexOf('--port') + 1] || 8080)) || 8080;
 
 // 媒体外链前缀：图片/大头资源放对象存储，页面只引用链接
 // 置空字符串则全部随站点一起发布
-const MEDIA = process.env.MEDIA_BASE ?? 'https://h2zbmh.cn-sy1.rains3.com';
+const MEDIA = process.env.MEDIA_BASE ?? 'https://cn-sy1.rains3.com/h2zbmh';
 
 const md = new MarkdownIt({ html: true, linkify: true, breaks: false });
 
